@@ -3,6 +3,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 
 
+
 class CameraScreen extends StatefulWidget {
   const CameraScreen({Key? key}) : super(key: key);
 
@@ -11,14 +12,15 @@ class CameraScreen extends StatefulWidget {
 }
 
 class _CameraScreenState extends State<CameraScreen> {
-  MobileScannerController cameraController = MobileScannerController();
+ MobileScannerController cameraController = MobileScannerController();
   bool _screenOpened = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Mobile Scanner"),
+        backgroundColor: Colors.black,
+        title: const Text("Skenuj"),
         actions: [
           IconButton(
             color: Colors.white,

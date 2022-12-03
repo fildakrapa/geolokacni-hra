@@ -29,7 +29,7 @@ apply plugin: 'com.google.gms.google-services'
 
 android {
 
-    compileSdkVersion flutter.compileSdkVersion
+    compileSdkVersion 32
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -42,18 +42,12 @@ android {
         applicationId "com.example.geoapp"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-build-configuration.
-        //   minSdkVersion 22
-        minSdkVersion localProperties.getPropery("flutter.minSdkVersion").toInteger()
+         //  minSdkVersion flutter.minSdkVersion
+        minSdkVersion localProperties.getProperty("flutter.minSdkVersion").toInteger()
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
-
-    }
-
-
-
-
 
     buildTypes {
         release {
@@ -61,6 +55,14 @@ android {
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig signingConfigs.debug
         }
+
+    }
+
+
+
+
+
+
     }
 
 
