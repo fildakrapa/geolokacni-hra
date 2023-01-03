@@ -11,7 +11,14 @@ class HomScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: TextButton(
-          child: Text("Logout"),
+              child: Container(
+
+                child: const Align(
+                  alignment: Alignment.topRight,
+                  child: Icon(Icons.logout_outlined),
+                ),
+              ),
+
           onPressed: () {
             FirebaseAuth.instance.signOut().then((value) {
               print("Signed Out");
@@ -24,6 +31,11 @@ class HomScreen extends StatelessWidget {
           ),
         ),
         automaticallyImplyLeading: false,
+
+
+
+
+        
       ),
     body: Center(
 
