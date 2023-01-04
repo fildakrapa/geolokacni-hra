@@ -41,6 +41,7 @@ dependencies:
   google_nav_bar: ^5.0.6
   circle_nav_bar: ^2.0.0
 
+  geolocator: ^9.0.2
 
   mobile_scanner: ^2.1.0
 
