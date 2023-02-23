@@ -1,124 +1,130 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
-
-
-
+import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CameraScreen extends StatefulWidget {
-  const CameraScreen({Key? key}) : super(key: key);
-
   @override
   _CameraScreenState createState() => _CameraScreenState();
 }
 
 class _CameraScreenState extends State<CameraScreen> {
- MobileScannerController cameraController = MobileScannerController();
-  bool _screenOpened = false;
+  String _scanResult = '';
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+
+  late QRViewController controller;
+  bool isCameraReady = false;
+  bool isScannedDataScreenOpen = false;
+
+  @override
+  void dispose() {
+    controller?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text("Skenuj"),
-        actions: [
-          IconButton(
-            color: Colors.white,
-            icon: ValueListenableBuilder(
-              valueListenable: cameraController.torchState,
-              builder: (context, state, child) {
-                switch (state as TorchState) {
-                  case TorchState.off:
-                    return const Icon(Icons.flash_off, color: Colors.grey);
-                  case TorchState.on:
-                    return const Icon(Icons.flash_on, color: Colors.yellow);
-                }
-              },
-            ),
-            iconSize: 32.0,
-            onPressed: () => cameraController.toggleTorch(),
-          ),
-          IconButton(
-            color: Colors.white,
-            icon: ValueListenableBuilder(
-              valueListenable: cameraController.cameraFacingState,
-              builder: (context, state, child) {
-                switch (state as CameraFacing) {
-                  case CameraFacing.front:
-                    return const Icon(Icons.camera_front);
-                  case CameraFacing.back:
-                    return const Icon(Icons.camera_rear);
-                }
-              },
-            ),
-            iconSize: 32.0,
-            onPressed: () => cameraController.switchCamera(),
-          ),
-        ],
+        title: Text('Skenuj'),
       ),
-      body: MobileScanner(
-        allowDuplicates: true,
-        controller: cameraController,
-        onDetect: _foundBarcode,
+      body: Stack(
+        children: [
+          _buildQRView(context),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(_scanResult),
+            ),
+          )
+        ],
       ),
     );
   }
 
-  void _foundBarcode(Barcode barcode, MobileScannerArguments? args) {
-    /// open screen
-    if (!_screenOpened) {
-      final String code = barcode.rawValue ?? "---";
-      debugPrint('Barcode found! $code');
-      _screenOpened = true;
-      Navigator.push(context, MaterialPageRoute(builder: (context) =>
-          FoundCodeScreen(screenClosed: _screenWasClosed, value: code),));
+  Widget _buildQRView(BuildContext context) {
+    return QRView(
+      key: qrKey,
+      onQRViewCreated: _onQRViewCreated,
+      overlay: QrScannerOverlayShape(
+        borderRadius: 10,
+        borderColor: Colors.green,
+        borderLength: 30,
+        borderWidth: 10,
+        cutOutSize: 300,
+      ),
+    );
+  }
+
+  void _onQRViewCreated(QRViewController controller) {
+    setState(() {
+      this.controller = controller;
+    });
+    controller.scannedDataStream.listen((scanData) {
+      if (!isScannedDataScreenOpen) {
+        setState(() {
+          _scanResult = scanData.code!;
+          isScannedDataScreenOpen = true;
+        });
+        controller.pauseCamera();
+        _findData(context).then((_) {
+          controller.resumeCamera();
+          isScannedDataScreenOpen = false;
+        });
+      }
+    });
+    controller.resumeCamera();
+    setState(() {
+      isCameraReady = true;
+    });
+  }
+
+  Future<void> _findData(BuildContext context) async {
+    final CollectionReference qrcodes =
+    FirebaseFirestore.instance.collection('pamatky');
+    DocumentSnapshot snapshot = await qrcodes.doc(_scanResult).get();
+    if (snapshot.exists) {
+      Object? data = snapshot.data();
+      controller.pauseCamera(); // pause the camera stream
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ScannedDataScreen(
+            scannedData: data.toString(),
+          ),
+        ),
+      ).then((_) {
+        // resume the camera stream when the user pops the scanned data screen
+        controller.resumeCamera();
+      });
+    } else {
+      print('Data not found');
     }
   }
-
-  void _screenWasClosed() {
-    _screenOpened = false;
-  }
 }
 
-class FoundCodeScreen extends StatefulWidget {
-  final String value;
-  final Function() screenClosed;
-  const FoundCodeScreen({
-    Key? key,
-    required this.value,
-    required this.screenClosed,
-  }) : super(key: key);
-
-  @override
-  State<FoundCodeScreen> createState() => _FoundCodeScreenState();
-}
-
-class _FoundCodeScreenState extends State<FoundCodeScreen> {
+class ScannedDataScreen extends StatelessWidget {
+  final String scannedData;
+  ScannedDataScreen({required this.scannedData});
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Found Code"),
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () {
-            widget.screenClosed();
-            Navigator.pop(context);
-          },
-          icon: Icon(Icons.arrow_back_outlined,),
-        ),
-      ),
-      body: Center(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text("Scanned Code:", style: TextStyle(fontSize: 20,),),
-              SizedBox(height: 20,),
-              Text(widget.value, style: TextStyle(fontSize: 16,),),
-            ],
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context);
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: Text('Naskenovaná data'),
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
           ),
+        ),
+        body: Center(
+          child: Text(scannedData),
         ),
       ),
     );

@@ -1,109 +1,73 @@
-//import 'dart:html';
-
-import "package:flutter/material.dart";
-import 'package:geolocator/geolocator.dart';
-import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:location/location.dart';
-
-
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
 
 class MapSample extends StatefulWidget {
-  const MapSample({Key? key}) : super(key: key);
-
   @override
-  State<MapSample> createState() => MapSampleState();
+  _MapSampleState createState() => _MapSampleState();
 }
 
-class MapSampleState extends State<MapSample> {
-late GoogleMapController googleMapController;
-static const CameraPosition initialCameraPosition = CameraPosition(target: LatLng(98, 110));
-
-  LocationData? currentLocation;
-
-  void getCurrentLocation() {
-    Location location = Location();
-
-    location.getLocation().then(
-        (location) {
-          currentLocation = location;
-        },
-    );
-  }
+class _MapSampleState extends State<MapSample> {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  Set<Marker> _markers = {};
 
   @override
   void initState() {
-    getCurrentLocation();
+    super.initState();
+    _getMarkers();
+  }
+
+  void _getMarkers() async {
+    QuerySnapshot querySnapshot =
+    await _db.collection('pamatky').get(); // získání dat z Firestore
+
+    setState(() {
+      _markers = querySnapshot.docs.map((doc) {
+        GeoPoint position = doc['location']; // získání souřadnic z Firestore
+        String name = doc['name']; // získání názvu z Firestore
+        return Marker(
+          markerId: MarkerId(doc.id),
+          position: LatLng(position.latitude, position.longitude),
+          infoWindow: InfoWindow(title: name),
+        );
+      }).toSet();
+    });
+
+  }
+
+  Future<void> _getUserLocation() async {
+    Position position = await Geolocator.getCurrentPosition();
+    Marker userMarker = Marker(
+      markerId: MarkerId('user'),
+      position: LatLng(position.latitude, position.longitude),
+      infoWindow: InfoWindow(title: 'Moje poloha'),
+    );
+    setState(() {
+      _markers = {..._markers, userMarker};
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body:  GoogleMap(
-      initialCameraPosition: initialCameraPosition,
-      zoomControlsEnabled: false,
-      mapType: MapType.normal,
-      onMapCreated: (GoogleMapController controler){
-        googleMapController = controler;
-      }
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: Text('Mapa'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.my_location),
+            onPressed: () => _getUserLocation(),
+          ),
+        ],
       ),
-
-
-  //        markers: {
-   //   Marker(
-  //    markerId: const MarkerId("currentLocation"),
-  //    position: LatLng(currentLocation!.latitude!, currentLocation!.longitude!),
-  //    )
-  //    }
-
-  //    ),
-     
-
-
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          Position position = await _determinePosition();
-          
-          googleMapController
-          .animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: LatLng(position.latitude, position.longitude),zoom: 20.5 )));
-          Marker(
-            markerId: const MarkerId("currentLocation"),
-            position: LatLng(position.latitude, position.longitude),
-          );
-
-        },
-        label: const Text('Já'),
-        icon: const Icon(Icons.location_history),
+      body: GoogleMap(
+        initialCameraPosition: CameraPosition(
+          target: LatLng(49.1974, 16.6088), // počáteční pozice kamery
+          zoom: 10, // počáteční přiblížení
+        ),
+        markers: _markers,
       ),
-
-
     );
   }
-
-  Future<Position> _determinePosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return Future.error("Poloha není povolena");
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-
-      if (permission == LocationPermission.denied) {
-        return Future.error("Poloha není povolena");
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      return Future.error("Poloha je zakázána");
-    }
-
-    Position position = await Geolocator.getCurrentPosition();
-    return position;
-  }
-  }
+}
