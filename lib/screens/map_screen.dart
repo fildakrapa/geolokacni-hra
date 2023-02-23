@@ -66,7 +66,11 @@ static const CameraPosition initialCameraPosition = CameraPosition(target: LatLn
           Position position = await _determinePosition();
           
           googleMapController
-          .animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: LatLng(position.latitude, position.longitude),zoom: 13.5 )));
+          .animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: LatLng(position.latitude, position.longitude),zoom: 20.5 )));
+          Marker(
+            markerId: const MarkerId("currentLocation"),
+            position: LatLng(position.latitude, position.longitude),
+          );
 
         },
         label: const Text('Já'),
