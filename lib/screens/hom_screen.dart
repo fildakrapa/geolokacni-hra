@@ -9,34 +9,25 @@ class HomScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: TextButton(
-              child: Container(
-
-                child: const Align(
-                  alignment: Alignment.topRight,
-                  child: Icon(Icons.logout_outlined),
-                ),
-              ),
-
-          onPressed: () {
-            FirebaseAuth.instance.signOut().then((value) {
-              print("Signed Out");
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => SignInScreen()));
-            });
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
-          ),
-        ),
-        automaticallyImplyLeading: false,
-
-
-
-
-        
+          backgroundColor: Colors.black,
+          title: Text('Moje Sbírka'),
+          automaticallyImplyLeading: false,
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: Icon(Icons.logout_outlined),
+              onPressed: () {
+                FirebaseAuth.instance.signOut().then((value) {
+                  print("Signed Out");
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => SignInScreen()));
+                });
+              },
+            ),
+          ]
       ),
+
+
     body: Center(
 
     ),

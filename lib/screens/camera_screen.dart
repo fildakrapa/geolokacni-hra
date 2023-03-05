@@ -27,6 +27,8 @@ class _CameraScreenState extends State<CameraScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: Text('Skenuj'),
+        centerTitle: true,
+        automaticallyImplyLeading: false,
       ),
       body: Stack(
         children: [
@@ -85,7 +87,12 @@ class _CameraScreenState extends State<CameraScreen> {
     FirebaseFirestore.instance.collection('pamatky');
     DocumentSnapshot snapshot = await qrcodes.doc(_scanResult).get();
     if (snapshot.exists) {
-      Object? data = snapshot.data();
+      String name = snapshot.get('name');
+      String description = snapshot.get('description');
+      Map<String, dynamic> data = {
+        'name': name,
+        'description': description,
+      };
       controller.pauseCamera(); // pause the camera stream
       Navigator.push(
         context,
