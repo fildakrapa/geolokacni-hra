@@ -8,8 +8,6 @@ import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:geoapp/screens/hom_screen.dart';
 
 
-
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
